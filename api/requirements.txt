@@ -1,0 +1,5 @@
+# Minimal for the B.1/B.2 boot milestone.
+# We add the DB drivers (cassandra-driver, neo4j, motor, asyncpg, redis)
+# as we build each endpoint in B.5.
+fastapi==0.115.2
+uvicorn[standard]==0.30.6
