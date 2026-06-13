@@ -121,7 +121,8 @@ services:
       POSTGRES_DSN: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@billing-db:5432/${POSTGRES_DB}"
       REDIS_URL: "redis://:${REDIS_PASSWORD}@cache:6379/0"
     volumes:
-      - ./cql:/app/cql:ro   # API reads init.cql from here to bootstrap Cassandra
+      - ./cql:/app/cql:ro             # API reads init.cql to bootstrap Cassandra
+      - ./neo4j/import:/app/neo4j:ro  # API reads seed.cypher to seed the graph
     depends_on:
       timeseries-db:
         condition: service_healthy
