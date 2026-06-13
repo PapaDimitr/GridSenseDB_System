@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+
+# OS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/
+
+# NOTE on .env:
+# It is intentionally NOT ignored here, because the marker runs
+# `docker compose up --build` with no manual steps, so the stack must
+# have its env present. The .env holds dev-only credentials.
+# If your instructor requires .env to be uncommitted, uncomment:
+# .env

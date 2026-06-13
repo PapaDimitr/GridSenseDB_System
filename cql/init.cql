@@ -34,3 +34,15 @@ CREATE TABLE IF NOT EXISTS relay_events (
 ) WITH CLUSTERING ORDER BY (event_time ASC);
 -- TODO: add a second sensor_readings table or materialized view
 -- optimised for the cross-network dashboard query (pattern 2)
+
+
+CREATE TABLE IF NOT EXISTS sensor_readings_last_60sec (
+    time_bucket   TIMESTAMP,
+    sensor_id     TEXT,
+    reading_time  TIMESTAMP,
+    metric_type   TEXT,
+    value         FLOAT,
+    unit          TEXT,
+    PRIMARY KEY ((time_bucket), reading_time, sensor_id)
+) WITH CLUSTERING ORDER BY (reading_time DESC, sensor_id ASC)
+AND default_time_to_live = 3600; -- short TTL: dashboard only needs recent data

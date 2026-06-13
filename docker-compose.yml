@@ -17,7 +17,8 @@ services:
       MAX_HEAP_SIZE: "512M"
     volumes:
       - cassandra_data:/var/lib/cassandra
-      - ./cql/init.cql:/docker-entrypoint-initdb.d/init.cql
+      # NOTE: the Cassandra image does not auto-run init scripts; the API
+      # applies ./cql/init.cql on startup instead (see api/db/cassandra.py).
     healthcheck:
       test: ["CMD-SHELL", "nodetool status | grep -q '^UN'"]
       interval: 30s
@@ -119,6 +120,8 @@ services:
       MONGO_URI: "mongodb://${MONGO_USER}:${MONGO_PASSWORD}@catalog-db:27017"
       POSTGRES_DSN: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@billing-db:5432/${POSTGRES_DB}"
       REDIS_URL: "redis://:${REDIS_PASSWORD}@cache:6379/0"
+    volumes:
+      - ./cql:/app/cql:ro   # API reads init.cql from here to bootstrap Cassandra
     depends_on:
       timeseries-db:
         condition: service_healthy

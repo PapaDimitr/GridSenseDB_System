@@ -1,11 +1,24 @@
-"""GridSense API — entry point.
+"""GridSense API — entry point."""
+from contextlib import asynccontextmanager
 
-B.1/B.2 milestone: a minimal app that boots so the whole stack can come up.
-Routers and DB connections are added in B.5.
-"""
 from fastapi import FastAPI
 
-app = FastAPI(title="GridSense API", version="0.1.0")
+from db import cassandra as cass
+from routers import sensors
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: connect to Cassandra and apply the schema (init.cql).
+    session = cass.connect()
+    cass.apply_init_cql(session)
+    yield
+    # Shutdown: close the Cassandra connection cleanly.
+    cass.close()
+
+
+app = FastAPI(title="GridSense API", version="0.2.0", lifespan=lifespan)
+app.include_router(sensors.router)
 
 
 @app.get("/")
