@@ -1,8 +1,5 @@
-"""/sensors endpoints — backed by Cassandra (access pattern 1).
+#/sensors endpoints — backed by Cassandra (access pattern 1).
 
-Routes are defined with `def` (not `async def`) on purpose: the cassandra-driver
-is blocking, so FastAPI runs these in its threadpool and the event loop stays free.
-"""
 from datetime import datetime, timezone
 
 from fastapi import APIRouter
@@ -33,21 +30,24 @@ def write_reading(reading: SensorReadingIn):
 
 
 @router.get("/{sensor_id}/readings", response_model=list[SensorReadingOut])
-def last_n_readings(sensor_id: str, limit: int = 10):
+def last_n_readings(sensor_id: str, limit: int = 10, from_time: datetime | None = None):
     """Access pattern (1): the most recent `limit` readings for one sensor.
 
     Cheap because the table is partitioned by sensor_id and clustered by
     reading_time DESC — this is a single-partition read of the top `limit` rows.
     """
     session = get_session()
+    # optional from_time → only readings at/after that timestamp
+    where = "WHERE sensor_id = %s"
+    params = [sensor_id]
+    if from_time is not None:
+        where += " AND reading_time >= %s"
+        params.append(from_time)
+    params.append(limit)
     rows = session.execute(
-        """
-        SELECT sensor_id, reading_time, metric_type, value, unit, quality_flag
-        FROM sensor_readings
-        WHERE sensor_id = %s
-        LIMIT %s
-        """,
-        (sensor_id, limit),
+        f"SELECT sensor_id, reading_time, metric_type, value, unit, quality_flag "
+        f"FROM sensor_readings {where} LIMIT %s",
+        tuple(params),
     )
     return [
         SensorReadingOut(

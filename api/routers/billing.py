@@ -15,6 +15,9 @@ router = APIRouter(prefix="/billing", tags=["Billing & Accounts"])
 async def get_account(premise_id: str):
     """Account details + current balance for a premise."""
     SELECT_ACCOUNT = """
+        SELECT account_id, premise_id, tariff, balance, created_at
+        FROM billing_accounts
+        WHERE premise_id = $1
     """
     async with get_pool().acquire() as conn:
         row = await conn.fetchrow(SELECT_ACCOUNT, premise_id)
@@ -36,8 +39,15 @@ async def create_invoice(inv: InvoiceIn):
     invoice_id = f"{inv.premise_id}:{inv.period}"
 
     INSERT_INVOICE = """
+        INSERT INTO invoices (invoice_id, premise_id, period, amount)
+        VALUES ($1, $2, $3, $4)
+        RETURNING issued_at
     """
     UPDATE_BALANCE = """
+        UPDATE billing_accounts
+        SET balance = balance + $1
+        WHERE premise_id = $2
+        RETURNING balance
     """
 
     async with get_pool().acquire() as conn:
