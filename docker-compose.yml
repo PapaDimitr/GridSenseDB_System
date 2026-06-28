@@ -1,6 +1,5 @@
 # GridSense — full stack (B.1 / B.2)
 # Run:  docker compose up --build
-# No literal credentials live in this file — they come from .env (see B.1 rule).
 
 services:
   # ── Time-series store: sensor readings (Cassandra, A.3) ───────────
@@ -93,7 +92,8 @@ services:
     image: redis:7-alpine
     container_name: gridsense_redis
     restart: unless-stopped
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}",
+              "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
     ports:
       - "6379:6379"
     volumes:
@@ -133,6 +133,34 @@ services:
       billing-db:
         condition: service_healthy
       cache:
+        condition: service_healthy
+
+  # ── One-shot seeder: loads demo data, then exits (idempotent) ─────
+  seed:
+    build: ./api                      # reuse the API image (drivers already installed)
+    container_name: gridsense_seed
+    env_file:
+      - .env
+    environment:
+      CASSANDRA_HOSTS: "timeseries-db"
+      NEO4J_URI: "bolt://graph-db:7687"
+      MONGO_URI: "mongodb://${MONGO_USER}:${MONGO_PASSWORD}@catalog-db:27017"
+      POSTGRES_DSN: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@billing-db:5432/${POSTGRES_DB}"
+    volumes:
+      - ./scripts:/app/scripts:ro     # seed.py lives outside the API image's build context
+      - ./neo4j/import:/app/neo4j:ro
+    command: ["python", "scripts/seed.py"]
+    restart: "no"                     # run once and stop
+    depends_on:
+      api:
+        condition: service_started    # API applies init.cql before we seed Cassandra
+      timeseries-db:
+        condition: service_healthy
+      graph-db:
+        condition: service_healthy
+      catalog-db:
+        condition: service_healthy
+      billing-db:
         condition: service_healthy
 
 volumes:

@@ -28,17 +28,17 @@ from psycopg2.extras import Json
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-# Host-facing config: the script runs on the host, so it uses localhost + the
-# exposed ports (not the compose service names).
-NEO4J_URI = "bolt://localhost:7687"
+NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")
 NEO4J_AUTH = ("neo4j", os.getenv("NEO4J_PASSWORD", "gridsense_dev"))
-MONGO_URI = (f"mongodb://{os.getenv('MONGO_USER','gridsense')}:"
-             f"{os.getenv('MONGO_PASSWORD','gridsense_dev')}@localhost:27017")
+MONGO_URI = os.getenv("MONGO_URI") or (
+    f"mongodb://{os.getenv('MONGO_USER','gridsense')}:"
+    f"{os.getenv('MONGO_PASSWORD','gridsense_dev')}@localhost:27017")
+POSTGRES_DSN = os.getenv("POSTGRES_DSN")
 PG = dict(host="localhost", port=5432,
           dbname=os.getenv("POSTGRES_DB", "gridsense"),
           user=os.getenv("POSTGRES_USER", "gridsense"),
           password=os.getenv("POSTGRES_PASSWORD", "gridsense_dev"))
-CASSANDRA_HOSTS = ["localhost"]
+CASSANDRA_HOSTS = os.getenv("CASSANDRA_HOSTS", "localhost").split(",")
 
 
 def seed_neo4j():
@@ -131,7 +131,7 @@ def seed_mongo():
 
 def seed_postgres():
     # 100 accounts + 2 invoices each
-    conn = psycopg2.connect(**PG)
+    conn = psycopg2.connect(POSTGRES_DSN) if POSTGRES_DSN else psycopg2.connect(**PG)
     conn.autocommit = True
     cur = conn.cursor()
     random.seed(7)

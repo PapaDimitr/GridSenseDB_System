@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from db import cassandra as cass, neo4j as graph, mongo, postgres, redis
 from routers import sensors, grid, equipment, billing, alerts, summary
@@ -45,6 +46,9 @@ app.include_router(equipment.router)
 app.include_router(billing.router)
 app.include_router(alerts.router)
 app.include_router(summary.router)
+
+# Observability: per-endpoint request count, error rate, latency histogram at /metrics.
+Instrumentator().instrument(app).expose(app)
 
 
 @app.get("/")
