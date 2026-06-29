@@ -57,6 +57,8 @@ curl localhost:8000/equipment/TX_001
 curl localhost:8000/billing/account/PREM_001
 ```
 
+> **Note on example 3:** `/summary` aggregates the **last hour** of readings relative to *now*, while the seed data is timestamped at a fixed historical date, so the aggregate fields (`latest_value`, `count_1h`, …) return `null`/`0`. The endpoint is working correctly, the `cached` flag still flips `false to true` on the second call, which is what demonstrates the Redis cache layer.
+
 ## API reference
 
 | Method | Path | Store |
